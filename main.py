@@ -9,6 +9,8 @@ from kivy.graphics.texture import Texture
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.popup import Popup
 
+import base64
+
 import json
 import urllib
 
@@ -47,7 +49,7 @@ class MessageScreen(Screen):
                     }
                 data_to_send = {'message': text}
                 if os.path.exists('snapshot.jpg'):
-                    data_to_send['photo'] = open('snapshot.jpg', 'rb').read()
+                    data_to_send['photo'] = base64.b64encode(open('snapshot.jpg', 'rb').read())
                 params = urllib.urlencode(data_to_send)
                 req = UrlRequest('http://localhost:8000/messages/', req_body=params,
                 req_headers=headers, timeout=10, on_progress=loading)
