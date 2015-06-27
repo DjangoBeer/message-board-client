@@ -16,6 +16,8 @@ import urllib
 
 import os
 
+__version__ = '1.0.0'
+
 Builder.load_file('./client.kv')
 
 class MenuScreen(Screen):
