@@ -28,7 +28,8 @@ class SettingsScreen(Screen):
 
 class CameraScreen(Screen):
     def make_photo(self, camera):
-        camera.texture.save('snapshot.jpg')
+        if camera.texture:
+            camera.texture.save('snapshot.jpg')
         sm.current = 'messages'
 
 
