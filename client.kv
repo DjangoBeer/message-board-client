@@ -1,0 +1,63 @@
+<MenuScreen>:
+    BoxLayout:
+        Button:
+            text: 'Login'
+            on_press: root.manager.current = 'login'
+
+<SettingsScreen>:
+    BoxLayout:
+        Button:
+            text: 'My settings button'
+        Button:
+            text: 'Back to menu'
+            on_press: root.manager.current = 'menu'
+
+<CameraScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        Camera:
+            id: camera
+            resolution: (640, 480)
+            play: True
+        ToggleButton:
+            text: 'Snapshot'
+            on_press: root.make_photo(camera)
+            size_hint_y: None
+            height: '48dp'
+
+<MessageScreen>:
+    BoxLayout:
+        Button:
+            id: btn_send
+            text: 'Send'
+            on_press: root.send_message(message_text.text); message_text.text=""
+        Button:
+            id: btn_makephoto
+            text: 'Photo'
+            on_press: root.manager.current = 'photo'
+        TextInput:
+            id: message_text
+            multiline: True
+
+<LoginScreen>:
+    GridLayout:
+        rows: 1
+        cols: 1
+        GridLayout:
+            rows: 3
+            cols: 2
+            Label:
+                text: 'Username:'
+            TextInput:
+                id: username
+                multiline: False
+            Label:
+                text: 'Password:'
+            TextInput:
+                id: password
+                password: True
+                multiline: False
+            Button:
+                id: send_button
+                text: 'Send'
+                on_press: root.login(username.text, password.text)
