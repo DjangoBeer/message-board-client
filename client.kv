@@ -1,16 +1,24 @@
 <MenuScreen>:
     BoxLayout:
         Button:
+            id: 'login_btn'
             text: 'Login'
-            on_press: root.manager.current = 'login'
+            on_press: root.goto()
+        Button:
+            text: 'Settings'
+            on_press: root.manager.current = 'settings'
 
 <SettingsScreen>:
     BoxLayout:
-        Button:
-            text: 'My settings button'
+        TextInput:
+            id: host
+            multiline: False
+        TextInput:
+            id: port
+            multiline: False
         Button:
             text: 'Back to menu'
-            on_press: root.manager.current = 'menu'
+            on_press: root.save_config(host.text, port.text); root.manager.current = 'menu'
 
 <CameraScreen>:
     BoxLayout:
@@ -38,6 +46,10 @@
         TextInput:
             id: message_text
             multiline: True
+        Button:
+            text: 'Back to menu'
+            on_press: root.manager.current = 'menu'
+
 
 <LoginScreen>:
     GridLayout:

@@ -21,11 +21,20 @@ __version__ = '1.0.0'
 Builder.load_file('./client.kv')
 
 class MenuScreen(Screen):
-    pass
+    def goto(self):
+        if not os.path.exists(os.path.join(App.get_running_app().user_data_dir, "client_config")):
+            sm.current = 'login'
+        else:
+            sm.current = 'messages'
+
 
 
 class SettingsScreen(Screen):
-    pass
+    def save_config(self, host, port):
+        if host and port:
+            with open(os.path.join(App.get_running_app().user_data_dir, 'client_config'), 'wb') as f:
+                config = {'host': host, 'port': port}
+                json.dump(config, f)
 
 
 class CameraScreen(Screen):
@@ -54,11 +63,13 @@ class MessageScreen(Screen):
                 if os.path.exists('snapshot.jpg'):
                     data_to_send['photo'] = base64.b64encode(open('snapshot.jpg', 'rb').read())
                 params = urllib.urlencode(data_to_send)
-                req = UrlRequest('http://localhost:8000/messages/', req_body=params,
-                req_headers=headers, timeout=10, on_progress=loading)
-                self.pb = ProgressBar() #100
-                self.popup = Popup(title='Sending message', content=self.pb, size_hint=(0.7, 0.3))
-                self.popup.open()
+                with open(os.path.join(App.get_running_app().user_data_dir, 'client_config'), 'rb') as ff:
+                    config = json.load(ff)
+                    req = UrlRequest('http://{0}:{1}/messages/'.format(config['host'], config['port']), req_body=params,
+                    req_headers=headers, timeout=10, on_progress=loading)
+                    self.pb = ProgressBar() #100
+                    self.popup = Popup(title='Sending message', content=self.pb, size_hint=(0.7, 0.3))
+                    self.popup.open()
 
 
 class LoginScreen(Screen):
@@ -77,18 +88,20 @@ class LoginScreen(Screen):
             params = json.dumps({'username': user, 'password': pwd})
             headers = {'Content-type': 'application/json',
                       'Accept': 'application/json'}
-            req = UrlRequest('http://localhost:8000/api-token-auth/', req_body=params,
-                    req_headers=headers, timeout=10, on_success=save_auth, on_progress=loading)
-            self.pb = ProgressBar() #100
-            self.popup = Popup(title='Get token from the server...', content=self.pb, size_hint=(0.7, 0.3))
-            self.popup.open()
+            with open(os.path.join(App.get_running_app().user_data_dir, 'client_config'), 'rb') as ff:
+                config = json.load(ff)
+                req = UrlRequest('http://{0}:{1}/api-token-auth/'.format(config['host'], config['port']), req_body=params,
+                        req_headers=headers, timeout=10, on_success=save_auth, on_progress=loading)
+                self.pb = ProgressBar() #100
+                self.popup = Popup(title='Get token from the server...', content=self.pb, size_hint=(0.7, 0.3))
+                self.popup.open()
 
 
 
 # Create the screen manager
 sm = ScreenManager(transition=SlideTransition())
 sm.add_widget(MenuScreen(name='menu'))
-#sm.add_widget(SettingsScreen(name='settings'))
+sm.add_widget(SettingsScreen(name='settings'))
 sm.add_widget(MessageScreen(name='messages'))
 sm.add_widget(CameraScreen(name='photo'))
 sm.add_widget(LoginScreen(name='login'))
@@ -102,8 +115,6 @@ class ClientApp(App):
     def build(self):
         self.logged_in = os.path.exists(os.path.join(self.user_data_dir, "usr_auth"))
         self.title = 'Message Board'
-        if self.logged_in:
-            sm.current = 'messages'
         return sm
 
 if __name__ == '__main__':
