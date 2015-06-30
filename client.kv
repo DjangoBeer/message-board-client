@@ -24,6 +24,8 @@
             multiline: False
         Button:
             text: 'Back to menu'
+            size_hint_y: None
+            height: '48dp'
             on_press: root.save_config(host.text, port.text); root.manager.current = 'menu'
 
 <CameraScreen>:
@@ -34,6 +36,12 @@
             on_press: root.make_photo()
             size_hint_y: None
             height: '48dp'
+        Button:
+            id: back_button
+            text: 'Back'
+            size_hint_y: None
+            height: '48dp'
+            on_press: root.manager.current = 'messages'
 
 <MessageScreen>:
     BoxLayout:
@@ -41,16 +49,22 @@
         Button:
             id: btn_send
             text: 'Send'
+            size_hint_y: None
+            height: '48dp'
             on_press: root.send_message(message_text.text); message_text.text=""
         Button:
             id: btn_makephoto
             text: 'Photo'
+            size_hint_y: None
+            height: '48dp'
             on_press: root.manager.current = 'photo'
         TextInput:
             id: message_text
             multiline: True
         Button:
             text: 'Back to menu'
+            size_hint_y: None
+            height: '48dp'
             on_press: root.manager.current = 'menu'
 
 
@@ -76,4 +90,12 @@
             Button:
                 id: send_button
                 text: 'Send'
+                size_hint_y: None
+                height: '48dp'
                 on_press: root.login(username.text, password.text)
+            Button:
+                id: back_button
+                text: 'Back to the menu'
+                size_hint_y: None
+                height: '48dp'
+                on_press: root.manager.current = 'menu'

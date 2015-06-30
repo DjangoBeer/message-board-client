@@ -129,7 +129,10 @@ class CameraLayout(FloatLayout):#the app ui
         self.add_widget(self.lblCam)
 
     def on_touch_down(self, e):
-        camera.take_picture('/storage/sdcard0/snapshot.jpg', self.done)
+        try:
+            camera.take_picture('/storage/sdcard0/snapshot.jpg', self.done)
+        except:
+            pass
 
     def done(self, e):
         sm.current = 'messages'
