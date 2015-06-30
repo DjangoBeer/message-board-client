@@ -26,9 +26,10 @@ default_config = {'host': 'localhost', 'port': 8000}
 
 class MenuScreen(Screen):
     def goto(self):
-        if not os.path.exists(os.path.join(App.get_running_app().user_data_dir, "client_config")):
-            with open(os.path.join(App.get_running_app().user_data_dir, "client_config"), 'wb') as f:
-                json.dump(default_config, f)
+        if not os.path.exists(os.path.join(App.get_running_app().user_data_dir, "usr_auth")):
+            if not os.path.exists(os.path.join(App.get_running_app().user_data_dir, "client_config")):
+                with open(os.path.join(App.get_running_app().user_data_dir, "client_config"), 'wb') as f:
+                    json.dump(default_config, f)
             sm.current = 'login'
         else:
             sm.current = 'messages'
