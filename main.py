@@ -1,24 +1,24 @@
 from kivy.app import App
-from kivy.lang import Builder
-from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.properties import BooleanProperty, ObjectProperty
-from kivy.network.urlrequest import UrlRequest
-from kivy.uix.screenmanager import SlideTransition
 from kivy.core.window import Window
 from kivy.graphics.texture import Texture
-from kivy.uix.progressbar import ProgressBar
+from kivy.lang import Builder
+from kivy.network.urlrequest import UrlRequest
+from kivy.properties import BooleanProperty, ObjectProperty
+from kivy.uix.camera import Camera
+from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.popup import Popup
+from kivy.uix.progressbar import ProgressBar
 
+from plyer import camera
 import base64
-
 import json
 import urllib
-
 import os
 
 __version__ = '1.0.0'
 
 Builder.load_file('./client.kv')
+
 
 class MenuScreen(Screen):
     def goto(self):
@@ -26,7 +26,6 @@ class MenuScreen(Screen):
             sm.current = 'login'
         else:
             sm.current = 'messages'
-
 
 
 class SettingsScreen(Screen):
@@ -38,10 +37,17 @@ class SettingsScreen(Screen):
 
 
 class CameraScreen(Screen):
-    def make_photo(self, camera):
-        if camera.texture:
-            camera.texture.save('snapshot.jpg')
-        sm.current = 'messages'
+
+    def make_photo(self):
+        def done():
+            sm.current = 'messages'
+        try:
+            camera.take_picture('snapshot.jpg', done)
+        except:
+            cam = Camera(resolution=(640, 480), play=True)
+            if cam.texture:
+                cam.texture.save('snapshot.jpg')
+            done()
 
 
 class MessageScreen(Screen):
@@ -85,6 +91,7 @@ class LoginScreen(Screen):
                     with open(os.path.join(App.get_running_app().user_data_dir, 'usr_auth'), 'wb') as f:
                         json.dump(result, f)
                         sm.current = 'messages'
+
             params = json.dumps({'username': user, 'password': pwd})
             headers = {'Content-type': 'application/json',
                       'Accept': 'application/json'}
@@ -110,10 +117,7 @@ sm.add_widget(LoginScreen(name='login'))
 
 class ClientApp(App):
 
-    logged_in = BooleanProperty(False)
-
     def build(self):
-        self.logged_in = os.path.exists(os.path.join(self.user_data_dir, "usr_auth"))
         self.title = 'Message Board'
         return sm
 

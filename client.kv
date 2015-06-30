@@ -10,9 +10,13 @@
 
 <SettingsScreen>:
     BoxLayout:
+        Label:
+            text: 'Host:'
         TextInput:
             id: host
             multiline: False
+        Label:
+            text: 'Port:'
         TextInput:
             id: port
             multiline: False
@@ -23,13 +27,9 @@
 <CameraScreen>:
     BoxLayout:
         orientation: 'vertical'
-        Camera:
-            id: camera
-            resolution: (640, 480)
-            play: True
-        ToggleButton:
+        Button:
             text: 'Snapshot'
-            on_press: root.make_photo(camera)
+            on_press: root.make_photo()
             size_hint_y: None
             height: '48dp'
 
