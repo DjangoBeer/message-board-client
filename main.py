@@ -10,7 +10,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-
+from kivy.storage.jsonstore import JsonStore
 
 from plyer import camera
 import base64
@@ -24,12 +24,28 @@ Builder.load_file('./client.kv')
 
 default_config = {'host': 'localhost', 'port': 8000}
 
+CONFIG_PATH = 'client_config'
+USR_AUTH = 'usr_auth'
+IMG_PATH = '/storage/sdcard0/snapshot.jpg'
+
+def get_app():
+    return App.get_running_app()
+
+def get_app_path():
+    return get_app().user_data_dir
+
+def get_user_path():
+    return os.path.join(get_app_path(), USR_AUTH)
+
+def get_config_path():
+    return os.path.join(get_app_path(), CONFIG_PATH)
+
+
 class MenuScreen(Screen):
     def goto(self):
-        if not os.path.exists(os.path.join(App.get_running_app().user_data_dir, "usr_auth")):
-            if not os.path.exists(os.path.join(App.get_running_app().user_data_dir, "client_config")):
-                with open(os.path.join(App.get_running_app().user_data_dir, "client_config"), 'wb') as f:
-                    json.dump(default_config, f)
+        if not len(get_app().user_store):
+            if not len(get_app().config_store):
+                get_app().config_store.put('config', **default_config)
             sm.current = 'login'
         else:
             sm.current = 'messages'
@@ -38,9 +54,7 @@ class MenuScreen(Screen):
 class SettingsScreen(Screen):
     def save_config(self, host, port):
         if host and port:
-            with open(os.path.join(App.get_running_app().user_data_dir, 'client_config'), 'wb') as f:
-                config = {'host': host, 'port': port}
-                json.dump(config, f)
+            get_app().config_store.put('config', host=host, port=port)
 
 
 class CameraScreen(Screen):
@@ -63,26 +77,25 @@ class MessageScreen(Screen):
                 self.pb.value += current_size
                 if self.pb.value >= total_size:
                     self.popup.dismiss()
-                    if os.path.exists('/storage/sdcard0/snapshot.jpg'):
-                        os.remove('/storage/sdcard0/snapshot.jpg')
+                    if os.path.exists(IMG_PATH):
+                        os.remove(IMG_PATH)
 
-            with open(os.path.join(App.get_running_app().user_data_dir, 'usr_auth'), 'rb') as f:
-                auth_data = json.load(f)
-                headers = {
-                    'Content-type': 'application/x-www-form-urlencoded',
-                    'Authorization': 'Token {0}'.format(auth_data['token'])
-                    }
-                data_to_send = {'message': text}
-                if os.path.exists('/storage/sdcard0/snapshot.jpg'):
-                    data_to_send['photo'] = base64.b64encode(open('/storage/sdcard0/snapshot.jpg', 'rb').read())
-                params = urllib.urlencode(data_to_send)
-                with open(os.path.join(App.get_running_app().user_data_dir, 'client_config'), 'rb') as ff:
-                    config = json.load(ff)
-                    req = UrlRequest('http://{0}:{1}/messages/'.format(config['host'], config['port']), req_body=params,
-                    req_headers=headers, timeout=10, on_progress=loading)
-                    self.pb = ProgressBar() #100
-                    self.popup = Popup(title='Sending message', content=self.pb, size_hint=(0.7, 0.3))
-                    self.popup.open()
+            token = get_app().user_store.get('auth')['token']
+            headers = {
+                'Content-type': 'application/x-www-form-urlencoded',
+                'Authorization': 'Token {0}'.format(token)
+                }
+            data_to_send = {'message': text}
+            if os.path.exists(IMG_PATH):
+                data_to_send['photo'] = base64.b64encode(open(IMG_PATH, 'rb').read())
+            params = urllib.urlencode(data_to_send)
+            host = get_app().config_store.get('config')['host']
+            port = get_app().config_store.get('config')['port']
+            req = UrlRequest('http://{0}:{1}/messages/'.format(host, port), req_body=params,
+            req_headers=headers, timeout=10, on_progress=loading)
+            self.pb = ProgressBar()
+            self.popup = Popup(title='Sending message', content=self.pb, size_hint=(0.7, 0.3))
+            self.popup.open()
 
 
 class LoginScreen(Screen):
@@ -95,20 +108,19 @@ class LoginScreen(Screen):
 
             def save_auth(req, result):
                 if 'token' in result:
-                    with open(os.path.join(App.get_running_app().user_data_dir, 'usr_auth'), 'wb') as f:
-                        json.dump(result, f)
-                        sm.current = 'messages'
+                    get_app().user_store.put('auth', token=result['token'])
+                    sm.current = 'messages'
 
             params = json.dumps({'username': user, 'password': pwd})
             headers = {'Content-type': 'application/json',
                       'Accept': 'application/json'}
-            with open(os.path.join(App.get_running_app().user_data_dir, 'client_config'), 'rb') as ff:
-                config = json.load(ff)
-                req = UrlRequest('http://{0}:{1}/api-token-auth/'.format(config['host'], config['port']), req_body=params,
-                        req_headers=headers, timeout=10, on_success=save_auth, on_progress=loading)
-                self.pb = ProgressBar() #100
-                self.popup = Popup(title='Get token from the server...', content=self.pb, size_hint=(0.7, 0.3))
-                self.popup.open()
+            host = get_app().config_store.get('config')['host']
+            port = get_app().config_store.get('config')['port']
+            req = UrlRequest('http://{0}:{1}/api-token-auth/'.format(host, port), req_body=params,
+                    req_headers=headers, timeout=10, on_success=save_auth, on_progress=loading)
+            self.pb = ProgressBar()
+            self.popup = Popup(title='Get token from the server...', content=self.pb, size_hint=(0.7, 0.3))
+            self.popup.open()
 
 
 
@@ -122,7 +134,7 @@ sm.add_widget(LoginScreen(name='login'))
 #sm.add_widget(LoginScreen(name='register'))
 
 
-class CameraLayout(FloatLayout):#the app ui
+class CameraLayout(FloatLayout):
     def __init__(self, **kwargs):
         super(CameraLayout, self).__init__(**kwargs)
         self.lblCam = Label(text="Click to take a picture!")
@@ -130,7 +142,7 @@ class CameraLayout(FloatLayout):#the app ui
 
     def on_touch_down(self, e):
         try:
-            camera.take_picture('/storage/sdcard0/snapshot.jpg', self.done)
+            camera.take_picture(IMG_PATH, self.done)
         except:
             pass
 
@@ -141,6 +153,8 @@ class CameraLayout(FloatLayout):#the app ui
 class ClientApp(App):
 
     def build(self):
+        self.user_store = JsonStore(get_user_path())
+        self.config_store = JsonStore(get_config_path())
         self.title = 'Message Board'
         return sm
 
